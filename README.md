@@ -6,4 +6,4 @@ This script ingests:
 3. FULL_NAME
 4. PHONE_Number
 
-from an HR file. The script creates a DUO user then sends that person a text to set up their DUO Account. DUO has a duo-client which made this process cake. A lot of the code was taken from here: https://github.com/duosecurity/duo_client_python/tree/master/examples. I modified it to my organization's needs. 
+from an HR file. The script creates a DUO user then sends that person a text to set up their DUO Account. DUO has a duo-client which made this process cake. A lot of the code was taken from here: https://github.com/duosecurity/duo_client_python/tree/master/examples. I modified it to my organization's needs, added some error checking for phone numbers, and logging.
