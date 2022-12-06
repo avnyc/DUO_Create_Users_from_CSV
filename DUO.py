@@ -17,11 +17,14 @@ class DUO:
     def __init__(self, phone_type, platform, ikey, skey, host):
         try:
             # Import df from HR file
+            self.correct = 0
+            self.wrong = 0
             self.df = pd.read_csv(filepath_or_buffer=duo_ingestion_file,
                                   delimiter=',',
                                   header=0,
                                   encoding='unicode_escape')
             duo_logger.info(f'Successfully imported DUO CSV file.')
+            self.total = self.df.shape[0]
 
             self.phone_type = phone_type
             self.platform = platform
@@ -40,16 +43,31 @@ class DUO:
         # Iterate over df and create DUO account
         for index, row in enumerate(self.df.itertuples(index=False)):
             try:
-                username = row.USERNAME
+
+                username_ = row.USERNAME
                 user_email = row.USER_EMAIL
                 full_name = row.FULL_NAME
                 phone_number = str(row.PHONE_NUMBER)
 
                 # Count integers in phone_number
-                phone_number_length = len(re.sub("[^0-9]", "", phone_number))
+                phone_number_length = len(re.sub('[^0-9]', '', phone_number))
 
                 if phone_number_length != 10:
                     duo_logger.error(f'Phone Number is not 10 integers')
+                    duo_logger.warning(f"WARNING")
+                    duo_logger.warning(f"WARNING")
+                    duo_logger.error(f'Please review this data row{row}.')
+                    duo_logger.warning(f"WARNING")
+                    duo_logger.warning(f"WARNING")
+                    duo_logger.info(
+                        f'-----------------------------------------------------------------------------------')
+                    duo_logger.info(f'\n')
+
+                    # Increment wrong counter
+                    self.wrong += 1
+
+                    # Continue Loop
+                    continue
                 else:
                     duo_logger.info(f'Phone number is the correct number of integers')
 
@@ -67,14 +85,28 @@ class DUO:
                     duo_logger.error(f'The phone number does not match one of the two approved regex patterns. '
                                      f'This phone number is not in the correct format.')
 
+                    duo_logger.warning(f"WARNING")
+                    duo_logger.warning(f"WARNING")
+                    duo_logger.error(f'Please review this data row{row}.')
+                    duo_logger.warning(f"WARNING")
+                    duo_logger.warning(f"WARNING")
+                    duo_logger.info(
+                        f'-----------------------------------------------------------------------------------')
+                    duo_logger.info(f'\n')
+
+                    # Increment wrong counter
+                    self.wrong += 1
+
+                    # Continue loop to next user
+                    continue
 
                 # Create and return a new user object.
                 user = self.admin_api.add_user(
-                    username=username,
+                    username=username_,
                     realname=full_name,
                     email=user_email,
                 )
-                duo_logger.info(f'{username} was created in DUO.')
+                duo_logger.info(f'{username_} was created in DUO.')
 
                 # Create and return a new phone object.
                 phone = self.admin_api.add_phone(
@@ -88,7 +120,7 @@ class DUO:
                     user_id=user['user_id'],
                     phone_id=phone['phone_id'],
                 )
-                duo_logger.info(f"{username}'s phone was added to DUO.")
+                duo_logger.info(f"{username_}'s phone was added to DUO.")
 
                 # Send SMS to phone number.
                 self.admin_api.send_sms_activation_to_phone(
@@ -96,20 +128,40 @@ class DUO:
                     install='1',
                 )
                 # Log text sent and time taken to run script to this point.
-                duo_logger.info(f'Successfully sent {username} a text.')
-                duo_logger.info(f"Took {((time.time() - start_time) / 60):.3f} minutes to create {username}'s account.")
+                duo_logger.info(f'Successfully sent {username_} a text!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                duo_logger.info(f"Took {((time.time() - start_time) / 60):.3f} minutes to create "
+                                f"{username_}'s account.")
                 duo_logger.info(f'-----------------------------------------------------------------------------------')
                 duo_logger.info(f'\n')
 
+                # Increment correct counter
+                self.correct += 1
+
             except Exception as e:
-                duo_logger.error(f"Failed to send {username}'s {phone_number} a text. Error is {e}.")
-                duo_logger.warning(f"Please review this user in DUO")
+                duo_logger.error(f"Failed to send {username_}'s {phone_number} a text. Error is {e}.")
+                duo_logger.warning(f"WARNING")
+                duo_logger.warning(f"WARNING")
+                duo_logger.error(f'Please review this data row{row}.')
+                duo_logger.warning(f"WARNING")
+                duo_logger.warning(f"WARNING")
+                duo_logger.info(f'-----------------------------------------------------------------------------------')
+                duo_logger.info(f'\n')
+
+                # Increment wrong counter
+                self.correct += 1
 
                 # Continue with loop on error
                 continue
 
         # Document how long script took to run
+        duo_logger.info(f'\n')
         duo_logger.info(f"Script took {((time.time() - start_time) / 60):.3f} minutes to run in its entirety.")
+        duo_logger.info(f'Total correct are: {self.correct}')
+        duo_logger.info(f'Total wrong are: {self.wrong}')
+        duo_logger.info(f'Total new employees are: {self.total}')
+        duo_logger.info(f'Total correct and wrong is {self.correct + self.wrong}')
+        if self.total == (self.correct + self.wrong):
+            duo_logger.info(f'All lines have been accounted for!')
 
 
 if __name__ == '__main__':
